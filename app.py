@@ -108,11 +108,8 @@ def get_related_restaurants(query, restaurants, client, model="gpt-4o-mini"):
         for item in recommendations
     ]
 
-
-
-# 세션 상태 초기화
-if "selected_restaurants" not in st.session_state:
-    st.session_state.selected_restaurants = []
+if 'selected_restaurants' not in st.session_state:
+    st.session_state['selected_restaurants'] = []
 
 # Streamlit UI 구성
 st.title("음식점 추천 시스템")
@@ -139,35 +136,30 @@ else:
 # 사용자 입력
 query = st.text_input("원하는 음식 키워드를 입력하세요 (예: 떡볶이, 파스타):")
 
-# 버튼 클릭 시 추천 실행
+# 추천받기 버튼 클릭 시 로직
 if st.button("추천받기"):
     if query.strip():
         with st.spinner("추천을 가져오는 중..."):
             related_restaurants = get_related_restaurants(query, filtered_restaurants, client)
-        
+
         if related_restaurants:
             st.success(f"'{selected_category}' 카테고리에서 추천 음식점을 찾았습니다!")
-            for r in related_restaurants:
-                col1, col2 = st.columns([4, 1])  # 카드와 체크박스 배치
-                with col1:
-                    st.markdown(f"### {r.name}")  # 음식점 이름
-                    st.write(f"**대표 메뉴:** {r.menu}")
-                    st.write(f"**주소:** {r.address}")
-                    st.write(f"**전화번호:** {r.phone}")
-                    st.write(f"**휴무일:** {r.holiday}")
-                    st.write(f"**운영 시간:** {r.hours}")
-                    st.write(f"**설명:** {r.description}")
-                with col2:
-                    # 체크박스 상태 관리
-                    checked = st.checkbox("선택", key=f"checkbox_{r.name}")
 
-                    if checked and r.name not in [res.name for res in st.session_state.selected_restaurants]:
-                        st.session_state.selected_restaurants.append(r)
-                    elif not checked and r.name in [res.name for res in st.session_state.selected_restaurants]:
-                        st.session_state.selected_restaurants = [
-                            res for res in st.session_state.selected_restaurants if res.name != r.name
-                        ]
+            for r in related_restaurants:
+                st.markdown(f"### {r.name}")
+                st.write(f"**대표 메뉴:** {r.menu}")
+                st.write(f"**주소:** {r.address}")
+                st.write(f"**전화번호:** {r.phone}")
+                st.write(f"**휴무일:** {r.holiday}")
+                st.write(f"**운영 시간:** {r.hours}")
+                st.write(f"**설명:** {r.description}")
+                st.write("")
+                if r.name not in [res.name for res in st.session_state.selected_restaurants]:
+                    st.session_state.selected_restaurants.append(r)
         else:
             st.warning("관련 음식점을 찾을 수 없습니다.")
     else:
         st.error("키워드를 입력해주세요.")
+
+if st.button("List 보기"):
+        st.switch_page("pages/2_list.py")
