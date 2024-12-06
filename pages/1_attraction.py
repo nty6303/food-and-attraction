@@ -7,8 +7,8 @@ import json
 api_key = "sk-"
 client = OpenAI(api_key=api_key)
 
-# Restaurant 클래스 정의
-class Restaurant:
+# Attraction 클래스 정의
+class Attraction:
     def __init__(self, name, category, address, phone, hours, description):
         self.name = name
         self.category = category
@@ -18,7 +18,7 @@ class Restaurant:
         self.description = description
 
     def __repr__(self):
-        return (f"Restaurant(name='{self.name}', "
+        return (f"Attraction(name='{self.name}', "
                 f"category='{self.category}', address='{self.address}', "
                 f"phone='{self.phone}', hours='{self.hours}', "
                 f"description='{self.description}')")
@@ -33,17 +33,17 @@ class Restaurant:
             "description": self.description,
         }
 
-# 음식점 추천 함수
-def get_related_restaurants(query, restaurants, client, model="gpt-4o-mini"):
-    restaurant_data = [r.to_dict() for r in restaurants]
+# 명소 추천 함수
+def get_related_Attractions(query, Attractions, client, model="gpt-4o-mini"):
+    Attraction_data = [a.to_dict() for a in Attractions]
 
     messages = [
-        {"role": "system", "content": "You are a helpful assistant for recommending restaurants."},
+        {"role": "system", "content": "You are a helpful assistant for recommending attractions."},
         {"role": "user", "content": f"""
-        아래는 음식점 데이터입니다. 사용자가 '{query}'에 관련된 음식점을 3개 추천해주세요.
-        추천 결과는 JSON 형식으로 반환하며, 각 음식점에는 다음 필드가 있어야 합니다:
-        - name (음식점 이름)
-        - category (음식 종류)
+        아래는 명소 데이터입니다. 사용자가 '{query}'에 관련된 명소를 3개 추천해주세요.
+        추천 결과는 JSON 형식으로 반환하며, 각 명소에는 다음 필드가 있어야 합니다:
+        - name (명소 이름)
+        - category (명소 종류)
         - address (주소)
         - phone (전화번호)
         - hours (운영 시간)
@@ -52,8 +52,8 @@ def get_related_restaurants(query, restaurants, client, model="gpt-4o-mini"):
         JSON 형식으로만 답변해주세요. 예:
         [
             {{
-                "name": "음식점1",
-                "category": "한식",
+                "name": "명1",
+                "category": "역사",
                 "address": "주소1",
                 "phone": "전화번호1",
                 "hours": "운영 시간1",
@@ -62,8 +62,8 @@ def get_related_restaurants(query, restaurants, client, model="gpt-4o-mini"):
             ...
         ]
 
-        음식점 데이터:
-        {restaurant_data}
+        명소 데이터:
+        {Attraction_data}
         """}
     ]
 
@@ -87,7 +87,7 @@ def get_related_restaurants(query, restaurants, client, model="gpt-4o-mini"):
         return []
 
     return [
-        Restaurant(
+        Attraction(
             name=item["name"],
             category=item["category"],
             address=item["address"],
@@ -98,50 +98,50 @@ def get_related_restaurants(query, restaurants, client, model="gpt-4o-mini"):
         for item in recommendations
     ]
 
-if 'selected_restaurants' not in st.session_state:
-    st.session_state['selected_restaurants'] = []
+if 'selected_Attractions' not in st.session_state:
+    st.session_state['selected_Attractions'] = []
 
 # Streamlit UI 구성
-st.title("음식점 추천 시스템")
+st.title("명소 추천 시스템")
 
-# 테스트용 음식점 데이터
-restaurants = [
-    Restaurant("남촌", "그릴", "북구 금곡대로8번길 14", "051-335-9294", "10:00-22:00", "청정지역인 지리산 아래 산청의 흑돼지만 사용하고 있는 믿을 수 있는 돼지구이전문점이다. 사용되는 흑돼지 자체가 일반적인 돼지고기와 식감과 맛의 차이가 많이 나며, 껍데기가 붙어 있는 오겹살 흑돼지 고기를 쓰는 것이 특징이다.")
+# 테스트용 명소 데이터
+Attractions = [
+    Attraction("겨울 철새의 아름다움을 만나는 ‘명지철새탐조대’", "자연", "부산 강서구 명지오션시티1로 284", "051-970-4000", "없음", "명지철새탐조대는 매년 150여 종의 겨울 철새가 찾는 도래지로, 갯벌에서 철새들의 생동감 넘치는 모습을 관찰할 수 있는 생태학습 명소입니다. 망원경과 안내 표지판이 마련되어 있어 탐조의 즐거움을 더하며, 일몰과 함께 황금빛 자연 풍경을 감상할 수 있는 힐링 장소로도 유명합니다.")
 ]
 
 # 카테고리 선택 옵션
-categories = ["전체", "한식", "중식", "일식", "아세안요리", "양식", "카페&베이커리", "해산물", "그릴"]
+categories = ["전체", "자연", "역사", "문화", "공원"]
 selected_category = st.radio("카테고리를 선택하세요:", categories)
 
-# 선택된 카테고리에 따라 음식점 필터링
+# 선택된 카테고리에 따라 명소 필터링
 if selected_category and selected_category != "전체":
-    filtered_restaurants = [r for r in restaurants if r.category == selected_category]
+    filtered_Attractions = [r for r in Attractions if r.category == selected_category]
 else:
-    filtered_restaurants = restaurants
+    filtered_Attractions = Attractions
 
 # 사용자 입력
-query = st.text_input("원하는 음식(점)을 알려주세요")
+query = st.text_input("원하는 명소를 알려주세요")
 
 # 추천받기 버튼 클릭 시 로직
 if st.button("추천받기"):
     if query.strip():
         with st.spinner("추천을 가져오는 중..."):
-            related_restaurants = get_related_restaurants(query, filtered_restaurants, client)
+            related_Attractions = get_related_Attractions(query, filtered_Attractions, client)
 
-        if related_restaurants:
-            st.success(f"'{selected_category}' 카테고리에서 추천 음식점을 찾았습니다!")
+        if related_Attractions:
+            st.success(f"'{selected_category}' 카테고리에서 추천 명소를 찾았습니다!")
 
-            for r in related_restaurants:
+            for r in related_Attractions:
                 st.markdown(f"### {r.name}")
                 st.write(f"**주소:** {r.address}")
                 st.write(f"**전화번호:** {r.phone}")
                 st.write(f"**운영 시간:** {r.hours}")
                 st.write(f"**설명:** {r.description}")
                 st.write("")
-                if r.name not in [res.name for res in st.session_state.selected_restaurants]:
-                    st.session_state.selected_restaurants.append(r)
+                if r.name not in [res.name for res in st.session_state.selected_Attractions]:
+                    st.session_state.selected_Attractions.append(r)
         else:
-            st.warning("관련 음식점을 찾을 수 없습니다.")
+            st.warning("관련 명소를 찾을 수 없습니다.")
     else:
         st.error("키워드를 입력해주세요.")
 
