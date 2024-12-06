@@ -4,7 +4,7 @@ from openai import OpenAI
 import json
 
 # OpenAI API 클라이언트 초기화
-api_key = "YOUR_OPENAI_API_KEY"
+api_key = "sk-"
 client = OpenAI(api_key=api_key)
 
 # Restaurant 클래스 정의
@@ -39,39 +39,62 @@ class Restaurant:
 
 # 음식점 추천 함수
 def get_related_restaurants(query, restaurants, client, model="gpt-4o-mini"):
-    # 음식점 데이터를 딕셔너리로 변환
     restaurant_data = [r.to_dict() for r in restaurants]
 
-    # 대화 메시지 생성
     messages = [
         {"role": "system", "content": "You are a helpful assistant for recommending restaurants."},
         {"role": "user", "content": f"""
         아래는 음식점 데이터입니다. 사용자가 '{query}'에 관련된 음식점을 3개 추천해주세요.
-        추천 결과는 JSON 형식으로 반환하며, 각 음식점에는 'name', 'menu', 'category', 'address', 'phone', 'holiday', 'hours', 'description' 필드가 있어야 합니다.
+        추천 결과는 JSON 형식으로 반환하며, 각 음식점에는 다음 필드가 있어야 합니다:
+        - name (음식점 이름)
+        - menu (대표 메뉴)
+        - category (음식 종류)
+        - address (주소)
+        - phone (전화번호)
+        - holiday (휴무일)
+        - hours (운영 시간)
+        - description (설명)
+
+        JSON 형식으로만 답변해주세요. 예:
+        [
+            {{
+                "name": "음식점1",
+                "menu": "메뉴1",
+                "category": "한식",
+                "address": "주소1",
+                "phone": "전화번호1",
+                "holiday": "휴일1",
+                "hours": "운영 시간1",
+                "description": "설명1"
+            }},
+            ...
+        ]
 
         음식점 데이터:
         {restaurant_data}
         """}
     ]
 
-    # OpenAI API 호출
     response = client.chat.completions.create(
         model=model,
         messages=messages
     )
 
-    # 응답에서 결과 추출
+    # 응답 내용 가져오기
     answer = response.choices[0].message.content
 
-    # JSON 파싱
+    # 불필요한 코드 블록 제거
+    cleaned_answer = answer.strip("```").strip("json").strip()
+
     try:
-        recommendations = json.loads(answer)
+        recommendations = json.loads(cleaned_answer)
     except json.JSONDecodeError as e:
         st.error(f"JSON 파싱 오류: {e}")
+        st.write(f"원본 응답: {answer}")  # 디버깅용 출력
+        st.write(f"클린된 응답: {cleaned_answer}")  # 클린한 응답 확인
         return []
 
-    # Restaurant 객체로 변환
-    related_restaurants = [
+    return [
         Restaurant(
             name=item["name"],
             menu=item["menu"],
@@ -85,7 +108,11 @@ def get_related_restaurants(query, restaurants, client, model="gpt-4o-mini"):
         for item in recommendations
     ]
 
-    return related_restaurants
+
+
+# 세션 상태 초기화
+if "selected_restaurants" not in st.session_state:
+    st.session_state.selected_restaurants = []
 
 # Streamlit UI 구성
 st.title("음식점 추천 시스템")
@@ -131,7 +158,15 @@ if st.button("추천받기"):
                     st.write(f"**운영 시간:** {r.hours}")
                     st.write(f"**설명:** {r.description}")
                 with col2:
-                    st.checkbox("선택")  # 체크박스 (현재 기능 없음)
+                    # 체크박스 상태 관리
+                    checked = st.checkbox("선택", key=f"checkbox_{r.name}")
+
+                    if checked and r.name not in [res.name for res in st.session_state.selected_restaurants]:
+                        st.session_state.selected_restaurants.append(r)
+                    elif not checked and r.name in [res.name for res in st.session_state.selected_restaurants]:
+                        st.session_state.selected_restaurants = [
+                            res for res in st.session_state.selected_restaurants if res.name != r.name
+                        ]
         else:
             st.warning("관련 음식점을 찾을 수 없습니다.")
     else:
