@@ -112,7 +112,7 @@ if 'selected_restaurants' not in st.session_state:
     st.session_state['selected_restaurants'] = []
 
 # Streamlit UI 구성
-st.title("음식점 추천 시스템")
+st.title("부산 음식점 추천 시스템")
 
 # 테스트용 음식점 데이터
 restaurants = [

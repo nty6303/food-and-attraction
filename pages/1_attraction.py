@@ -102,7 +102,7 @@ if 'selected_Attractions' not in st.session_state:
     st.session_state['selected_Attractions'] = []
 
 # Streamlit UI 구성
-st.title("명소 추천 시스템")
+st.title("부산 명소 추천 시스템")
 
 # 테스트용 명소 데이터
 Attractions = [
